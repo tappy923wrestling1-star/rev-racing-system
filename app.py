@@ -20,37 +20,31 @@ st.markdown("""
     font-family: 'Inter', 'Space Grotesk', 'Hiragino Kaku Gothic ProN', sans-serif !important;
 }
 
-/* メインタイトル */
-.title-text {
-    font-size: 4.2rem;
-    font-weight: 950;
-    font-style: italic;
-    letter-spacing: 6px;
-    background: linear-gradient(135deg, #ffffff 40%, #ff003c 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0px 0px 25px rgba(255, 0, 60, 0.4));
-    margin-top: 5px;
-    margin-bottom: 0px;
-    text-align: center;
-}
+/* サブタイトル：文字単体で魅せるミニマルデザイン */
 .subtitle-text {
-    font-size: 0.85rem;
+    font-size: 1.1rem;
     font-weight: 800;
     letter-spacing: 12px;
-    color: #555562 !important;
+    color: #ffffff !important;
     text-align: center;
     text-transform: uppercase;
-    margin-bottom: 35px;
+    margin-top: 15px;
+    margin-bottom: 40px;
+    text-shadow: 0px 0px 15px rgba(255, 0, 60, 0.4);
 }
 
 /* フォーム・カード：視認性の高いエッジ */
-div[data-testid="stForm"], div[data-testid="stExpander"] {
+div[data-testid="stForm"], div[data-testid="stExpander"], .custom-panel {
     background: linear-gradient(145deg, #0d0d14, #07070a) !important;
     border: 1px solid #2a1a20 !important;
     border-radius: 6px !important;
     padding: 30px !important;
     box-shadow: 0 15px 50px rgba(0,0,0,0.9) !important;
+}
+
+/* ヘッダー専用トグルボックスの微調整 */
+div[data-testid="stHeader"] {
+    background: transparent !important;
 }
 
 /* 入力エリア・セレクトボックスの文字を100%白くクリアに固定 */
@@ -75,7 +69,7 @@ input:focus {
 div[data-testid="stMetricValue"] {
     color: #ff003c !important;
     font-style: italic;
-    font-weight: 950;
+    font-weight: 955;
     font-size: 2.8rem;
     letter-spacing: -1px;
     filter: drop-shadow(0 0 10px rgba(255, 0, 60, 0.6));
@@ -94,20 +88,35 @@ div[data-testid="stMetric"] {
     padding: 15px 20px !important;
 }
 
-/* ボタン */
-button[kind="primary"] {
-    background: linear-gradient(90deg, #ff003c, #cc0030) !important;
+/* ボタン共通規格 */
+button[kind="primary"], button[kind="secondary"] {
     border: none !important;
     color: #ffffff !important;
     font-weight: 900 !important;
     font-style: italic !important;
-    letter-spacing: 1.5px !important;
+    letter-spacing: 1px !important;
     border-radius: 4px !important;
+    transition: all 0.15s ease-in-out !important;
+}
+button[kind="primary"] {
+    background: linear-gradient(90deg, #ff003c, #cc0030) !important;
     box-shadow: 0px 4px 20px rgba(255, 0, 60, 0.4) !important;
 }
 button[kind="primary"]:hover {
     background: linear-gradient(90deg, #ff2a5f, #ff003c) !important;
     box-shadow: 0px 0px 25px rgba(255, 0, 60, 0.8) !important;
+}
+/* ヘッダー専用フラットセカンダリボタン */
+button[key^="btn_nav_"], button[key="header_logout_trigger"] {
+    background: #181825 !important;
+    border: 1px solid #3f3f4e !important;
+    height: 42px !important;
+    font-size: 0.85rem !important;
+}
+button[key^="btn_nav_"]:hover, button[key="header_logout_trigger"]:hover {
+    border-color: #ff003c !important;
+    background: #221216 !important;
+    color: #ff003c !important;
 }
 
 /* タブ */
@@ -140,7 +149,7 @@ div[data-testid="stDataFrame"] {
     font-weight: 600 !important;
 }
 
-/* 🥇 表彰台ハイライトカード（完全修復） */
+/* 🥇 表彰台ハイライトカード */
 .podium-container {
     border-radius: 6px;
     padding: 16px 24px;
@@ -194,28 +203,19 @@ div[data-testid="stDataFrame"] {
 </style>
 """, unsafe_allow_html=True)
 
-# ロゴの配置
-logo_file = "logo.png"
-if os.path.exists(logo_file):
-    col1, col2, col3 = st.columns([1.6, 1, 1.6]) 
-    with col2: st.image(logo_file, use_container_width=True)
-
-st.markdown('<div class="title-text">REV AGENCY</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle-text">DATA TELEMETRY SYSTEM</div>', unsafe_allow_html=True)
-
 # ==========================================
 # 💾 データプロセッサ＆初期化設定
 # ==========================================
-if "current_season" not in st.session_state:
-    st.session_state.current_season = "Season 1"
+if "current_season" not in st.session_state: st.session_state.current_season = "Season 1"
+if "is_admin" not in st.session_state: st.session_state.is_admin = False
+if "show_admin_auth_input" not in st.session_state: st.session_state.show_admin_auth_input = False
 
 if os.path.exists(SAVE_FILE_NAME):
     try:
         loaded_df = pd.read_csv(SAVE_FILE_NAME, dtype={"パスワードデータ": str, "レース日時": str, "シーズン": str})
         for col in ["順位", "獲得ポイント", "獲得賞金"]:
             loaded_df[col] = pd.to_numeric(loaded_df[col], errors="coerce").fillna(0).astype(int)
-        if "シーズン" not in loaded_df.columns:
-            loaded_df["シーズン"] = "Season 1"
+        if "シーズン" not in loaded_df.columns: loaded_df["シーズン"] = "Season 1"
         st.session_state.history_df = loaded_df
         
         existing_seasons = loaded_df["シーズン"].dropna().unique()
@@ -276,30 +276,69 @@ current_season_data = history_df[history_df["シーズン"] == st.session_state.
 player_totals = current_season_data.groupby("プレイヤー名")["獲得ポイント"].sum().to_dict() if not current_season_data.empty else {}
 
 # ==========================================
-# 🔐 認証管理ヘッダー
+# 🔐 超精密水平アライメント・ヘッダー
 # ==========================================
 ADMIN_PASSWORD = "rev123"
 if "racer_name" not in st.session_state: st.session_state.racer_name = None
 if "gate_mode" not in st.session_state: st.session_state.gate_mode = "login"
 
-col_sp, col_adm, col_logo = st.columns([3.8, 1, 1])
-with col_adm:
-    with st.expander("運営スタッフ認証"):
-        pwd = st.text_input("パスワード入力", type="password", label_visibility="collapsed", key="admin_pwd_field")
-        st.session_state.is_admin = True if pwd == ADMIN_PASSWORD else False
-with col_logo:
-    if st.session_state.get("is_admin") or st.session_state.racer_name is not None:
-        if st.button("ログアウト", use_container_width=True):
-            st.session_state.is_admin = False
-            st.session_state.racer_name = None
-            st.session_state.gate_mode = "login"
+col_header_left, col_header_right = st.columns([3, 2])
+
+with col_header_left:
+    if not st.session_state.is_admin and st.session_state.racer_name:
+        st.markdown(f"<div style='padding-top:12px; color:#a1a1aa; font-size:0.95rem; font-weight:800; letter-spacing:1px;'>RACER ID: <span style='color:#ffffff; font-style:italic;'>{st.session_state.racer_name.upper()}</span></div>", unsafe_allow_html=True)
+    elif st.session_state.is_admin:
+        st.markdown("<div style='padding-top:12px; color:#ff003c; font-size:0.95rem; font-weight:800; letter-spacing:1px; font-style:italic;'>⚙️ SYSTEM ADMINISTRATOR MODE</div>", unsafe_allow_html=True)
+
+with col_header_right:
+    c_btn_adm, c_btn_logo = st.columns(2)
+    with c_btn_adm:
+        adm_label = "🔒 認証解除" if st.session_state.is_admin else "🔑 運営スタッフ認証"
+        if st.button(adm_label, use_container_width=True, key="btn_nav_admin_toggle"):
+            if st.session_state.is_admin:
+                st.session_state.is_admin = False
+                st.session_state.show_admin_auth_input = False
+                st.rerun()
+            else:
+                st.session_state.show_admin_auth_input = not st.session_state.show_admin_auth_input
+                st.rerun()
+                
+    with c_btn_logo:
+        if st.session_state.is_admin or st.session_state.racer_name is not None:
+            if st.button("🚪 ログアウト", use_container_width=True, key="header_logout_trigger"):
+                st.session_state.is_admin = False
+                st.session_state.racer_name = None
+                st.session_state.show_admin_auth_input = False
+                st.session_state.gate_mode = "login"
+                st.rerun()
+
+if st.session_state.show_admin_auth_input and not st.session_state.is_admin:
+    _, col_auth_box = st.columns([3, 2])
+    with col_auth_box:
+        st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
+        pwd_input = st.text_input("運営用パスワードキーを入力", type="password", placeholder="PASSWORD...", key="fields_stealth_auth")
+        if pwd_input == ADMIN_PASSWORD:
+            st.session_state.is_admin = True
+            st.session_state.show_admin_auth_input = False
             st.rerun()
+
+st.markdown("<hr style='margin-top:12px; margin-bottom:20px;'>", unsafe_allow_html=True)
+
+# ==========================================
+# 🖼️ メインロゴ ＆ サブタイトル
+# ==========================================
+logo_file = "logo.png"
+if os.path.exists(logo_file):
+    col1, col2, col3 = st.columns([1.8, 1, 1.8]) 
+    with col2: st.image(logo_file, use_container_width=True)
+
+st.markdown('<div class="subtitle-text">DATA TELEMETRY SYSTEM</div>', unsafe_allow_html=True)
 
 # ==========================================
 # 🏁 ゲート認証画面
 # ==========================================
-if not st.session_state.get("is_admin") and st.session_state.racer_name is None:
-    st.markdown("<br><br>", unsafe_allow_html=True)
+if not st.session_state.is_admin and st.session_state.racer_name is None:
+    st.markdown("<br>", unsafe_allow_html=True)
     _, col_gate, _ = st.columns([1, 1.4, 1])
     with col_gate:
         if st.session_state.gate_mode == "login":
@@ -310,7 +349,7 @@ if not st.session_state.get("is_admin") and st.session_state.racer_name is None:
             if player_names:
                 options_html = "".join([f'<option value="{name}">' for name in player_names])
                 st.markdown(f"""<script>const inputs = window.parent.document.querySelectorAll('input[type="text"]');
-                inputs.forEach(input => {{ if (input.placeholder.includes("名前")) input.setAttribute('list', 'p_list'); }});
+                inputs.forEach(input => {{ if (input.placeholder && input.placeholder.includes("名前")) input.setAttribute('list', 'p_list'); }});
                 </script><datalist id="p_list">{options_html}</datalist>""", unsafe_allow_html=True)
                 
             st.markdown("<br>", unsafe_allow_html=True)
@@ -362,7 +401,7 @@ if not st.session_state.get("is_admin") and st.session_state.racer_name is None:
 # ==========================================
 # 🚀 モード別タブ展開
 # ==========================================
-if st.session_state.get("is_admin"):
+if st.session_state.is_admin:
     tabs = st.tabs(["📝 レース結果入力", "🛠️ 履歴＆一括置換修正", "🏆 総合ランキング", "📊 サーバーデータ分析", "👤 個人成績ログ", "⚙️ 条件＆シーズン管理"])
     tab_input, tab_history, tab_rank, tab_car, tab_personal, tab_setting = tabs
 else:
@@ -480,22 +519,24 @@ if tab_history:
             st.rerun()
 
 # ==========================================
-# タブ：⚙️ 条件＆シーズン管理
+# タブ：⚙️ 条件＆シーズン管理（💡ズレを完全修正完了）
 # ==========================================
 if tab_setting:
     with tab_setting:
         st.markdown("### 🏁 シーズン移行管理（終了と次シーズン始動）")
         st.info(f"現在の稼働シーズン： **{st.session_state.current_season}**")
         
-        col_s1, col_s2 = st.columns([2, 1])
         try:
             current_num = int(st.session_state.current_season.replace("Season ", ""))
             next_season_guess = f"Season {current_num + 1}"
         except:
             next_season_guess = "Season 2"
             
-        next_season_input = col_s1.text_input("次期シーズンの名称を設定してください", value=next_season_guess)
-        if col_s2.button("現在のシーズンを終了して次へ移行", type="primary", use_container_width=True):
+        # 💡横並びを完全に辞め、縦一列のソリッドなブロック構造に再配置
+        next_season_input = st.text_input("次期シーズンの名称を設定してください", value=next_season_guess)
+        
+        st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
+        if st.button("🔥 上記の名称でシーズンを終了して次へ移行する", type="primary", use_container_width=True):
             if next_season_input.strip():
                 st.session_state.current_season = next_season_input.strip()
                 st.success(f"新しいシーズン【 {st.session_state.current_season} 】が開始されました！")
@@ -508,23 +549,19 @@ if tab_setting:
         
         st.markdown("<br>### 各ライセンス（クラス）スレッショルド境界設定", unsafe_allow_html=True)
         c1, c2, c3 = st.columns(3)
-        st.session_state.rank_b_threshold = c1.number_input("Bライセンス 昇格条件pt", value=st.session_state.rank_b_threshold)
-        st.session_state.rank_a_threshold = c2.number_input("Aライセンス 昇格条件pt", value=st.session_state.rank_a_threshold)
-        st.session_state.rank_s_threshold = c3.number_input("Sライセンス 昇格条件pt", value=st.session_state.rank_s_threshold)
+        st.session_state.rank_b_threshold = c1.number_input("Bクラス昇格条件pt", value=st.session_state.rank_b_threshold)
+        st.session_state.rank_a_threshold = c2.number_input("Aクラス昇格条件pt", value=st.session_state.rank_a_threshold)
+        st.session_state.rank_s_threshold = c3.number_input("Sクラス昇格条件pt", value=st.session_state.rank_s_threshold)
 
 # ==========================================
-# タブ：🏆 総合ランキング（装飾・歪みの完全修復完了）
+# タブ：🏆 総合ランキング
 # ==========================================
 with tab_rank:
-    if not st.session_state.get("is_admin") and st.session_state.racer_name:
-        st.markdown(f"<div style='text-align:right; color:#a1a1aa; font-size:0.85rem; font-weight:700;'>RACER ID: {st.session_state.racer_name.upper()}</div>", unsafe_allow_html=True)
-        
     clean_df = history_df[history_df["レース名"] != "SYSTEM_SIGNUP"] if not history_df.empty else history_df
     
     if clean_df.empty:
         st.info("レースデータがありません。")
     else:
-        # シーズン集計セレクター
         all_seasons_available = ["📊 全シーズン累計"] + sorted(list(clean_df["シーズン"].dropna().unique()), reverse=True)
         selected_season_scope = st.selectbox("🏆 集計対象のシーズンを選択", all_seasons_available, key="rank_season_selector")
         
@@ -536,15 +573,9 @@ with tab_rank:
         if scope_df.empty:
             st.info("選択されたシーズンの有効なレースデータはありません。")
         else:
-            base = scope_df.groupby("プレイヤー名").agg(
-                出走=("順位", "count"), 
-                pt=("獲得ポイント", "sum"), 
-                賞金=("獲得賞金", "sum"), 
-                優勝=("順位", lambda x: (x == 1).sum())
-            ).reset_index()
+            base = scope_df.groupby("プレイヤー名").agg(出走=("順位", "count"), pt=("獲得ポイント", "sum"), 賞金=("獲得賞金", "sum"), 優勝=("順位", lambda x: (x == 1).sum())).reset_index()
             base["RANK"] = base["pt"].apply(lambda x: get_rank_info(x)[0])
             
-            # 💡【装飾の完全復元】HTMLインジェクションを使い、金銀銅の発光カードを完全復活
             st.markdown(f"### 🥇 {selected_season_scope.upper()} トップ表彰台")
             top3 = base.sort_values("pt", ascending=False).head(3).reset_index(drop=True)
             for idx, row in top3.iterrows():
@@ -566,7 +597,6 @@ with tab_rank:
 
             st.markdown("<br><hr>", unsafe_allow_html=True)
             
-            # 💡【歪みの完全修正】HTMLデザイン崩れの原因となるマークダウン併用を辞め、CSSクラスを当てた純粋HTML見出しで結合
             st.markdown('<div class="section-title">👑 ポイントリーダーボード</div>', unsafe_allow_html=True)
             st.dataframe(base.sort_values("pt", ascending=False)[["プレイヤー名", "RANK", "pt", "優勝", "出走"]], hide_index=True, use_container_width=True)
             
@@ -620,7 +650,6 @@ with tab_personal:
             st.info("このレーサーの公式出走ログはまだありません。")
         else:
             cur_rank, _ = get_rank_info(p_data[p_data["シーズン"] == st.session_state.current_season]["獲得ポイント"].sum())
-            # 💡 ① 「レーサー名」へのテキスト修正完了
             st.markdown(f"<div class='section-title' style='font-size:1.8rem; margin-top:10px;'>👤 レーサー名: {target.upper()} <span style='color:#ff003c; font-size:1.1rem; font-style:italic; margin-left:15px;'>{st.session_state.current_season} / CLASS {cur_rank}</span></div>", unsafe_allow_html=True)
             
             c1, c2, c3, c4 = st.columns(4)
