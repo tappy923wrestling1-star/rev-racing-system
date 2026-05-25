@@ -103,18 +103,15 @@ div[data-testid="stForm"] {
     box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
 }
 
-/* 💡①【表のデザインをスタイリッシュに超美化】 */
 div[data-testid="stDataFrame"] {
     background-color: #0d0d0d !important;
     border: 1px solid #262626 !important;
     border-radius: 6px !important;
     padding: 4px !important;
 }
-/* Streamlit内部のテーブル要素へのサイバーCSS強制注入 */
 div[data-testid="stDataFrame"] iframe, div[data-testid="stDataFrame"] table {
     background-color: #0d0d0d !important;
 }
-/* データ表のセルとフォント設定 */
 .rendered_html table {
     border-collapse: collapse !important;
     border: 1px solid #262626 !important;
@@ -162,7 +159,6 @@ hr {
     border-top: 1px solid #222222 !important;
 }
 
-/* ランキングトップ3用ハイライトカード */
 .podium-container {
     background: #111111;
     border-radius: 8px;
@@ -217,7 +213,7 @@ st.markdown('<div class="subtitle-text">Racing Management System</div>', unsafe_
 # ==========================================
 if os.path.exists(SAVE_FILE_NAME):
     try:
-        loaded_df = pd.read_csv(SAVE_FILE_NAME, dtype={"パスワードデータ": str})
+        loaded_df = pd.read_csv(SAVE_FILE_NAME, dtype={"パスワードデータ": str, "レース日時": str})
         loaded_df["順位"] = pd.to_numeric(loaded_df["順位"], errors="coerce").fillna(0).astype(int)
         loaded_df["獲得ポイント"] = pd.to_numeric(loaded_df["獲得ポイント"], errors="coerce").fillna(0).astype(int)
         loaded_df["獲得賞金"] = pd.to_numeric(loaded_df["獲得賞金"], errors="coerce").fillna(0).astype(int)
@@ -478,7 +474,6 @@ if tab_input:
             jst = pytz.timezone('Asia/Tokyo')
             race_name = col_n.text_input("🏁 レース名・イベント名", value="フリーレース")
             course_name_input = col_co.text_input("🛣️ 開催コース名", placeholder="コース名を入力、またはダブルクリック...", value="アロヨ・グランプリ")
-            # 💡 日付・時刻データをJSTタイムゾーンベースで安全に取得
             race_date = col_d.date_input("開催日", datetime.now(jst).date())
             race_time = col_t.time_input("開催時刻", datetime.now(jst).time(), step=60)
 
@@ -536,7 +531,8 @@ if tab_input:
             
             if not has_error:
                 participants_data = []
-                race_datetime_str = f"{race_date} {race_time.strftime('%H:%M')}"
+                # 💡 秒単位（:00）まで含めた一意のタイムスタンプ文字列を作成して主キー化
+                race_datetime_str = f"{race_date} {race_time.strftime('%H:%M')}:00"
                 
                 if final_course_name not in st.session_state.course_names:
                     st.session_state.course_names.append(final_course_name)
@@ -717,13 +713,12 @@ if tab_setting:
                     st.error(f"ファイル展開エラー: {e}")
 
 # ==========================================
-# 【共通】タブ：🏆 総合ランキング（①〜⑤の機能拡張）
+# 【共通】タブ：🏆 総合ランキング（💡レース別閲覧の大革命）
 # ==========================================
 with tab_rank:
     st.subheader("🏆 GLOBAL LEADERBOARD")
     
     if not st.session_state.get("is_admin") and st.session_state.racer_name:
-        # 💡 ① 「ログイン中のレーサー」へ文言統一
         st.write(f"ログイン中のレーサー: **{st.session_state.racer_name}**")
         
     clean_history = history_df[history_df["レース名"] != "SYSTEM_SIGNUP"] if not history_df.empty else history_df
@@ -739,7 +734,6 @@ with tab_rank:
         ranking_base["平均順位"] = ranking_base["平均順位"].round(1)
         ranking_base["ランク"] = ranking_base["累計ポイント"].apply(lambda x: get_rank_info(x)[0])
         
-        # ④ ランキングトップ3のハイライト表示
         st.markdown("### 🥇 SEASON TOP 3 PILOTS")
         top3_df = ranking_base.sort_values("累計ポイント", ascending=False).head(3).reset_index(drop=True)
         
@@ -776,7 +770,6 @@ with tab_rank:
             point_ranking = ranking_base.sort_values("累計ポイント", ascending=False)
             st.dataframe(point_ranking[["プレイヤー名", "ランク", "累計ポイント", "優勝回数", "平均順位"]], hide_index=True, use_container_width=True)
             
-        # ⑤ 名前選択リンク
         st.markdown("---")
         st.subheader("🔗 レーサー名をクリックして個別データを引き出す")
         selected_click_name = st.selectbox(
@@ -787,30 +780,41 @@ with tab_rank:
         if selected_click_name != "選択してください":
             st.session_state.selected_profile_racer = selected_click_name
             
-        # 💡②、③【レース別リザルト・振り返りログを開催日情報付きでスマートに完全分離】
+        # 💡【ここが今回の大幅強化！】開催「時間（時・分）」まで完全に切り分けたレース別公式リザルト表示
         st.divider()
-        st.subheader("🔍 レース別公式リザルト（過去ログ・振り返り）")
+        st.subheader("🔍 レース別公式リザルト（1戦ごとに完全分離閲覧）")
         
         if not clean_history.empty:
-            # 各開催日ごとの一意のレースを特定するため、「日付」「レース名」「コース名」を合体させたラベルを作成
             log_selector_df = clean_history.copy()
-            # レース日時の先頭10文字（YYYY-MM-DD）を切り出し
-            log_selector_df["開催日"] = log_selector_df["レース日時"].str.slice(0, 10)
             
-            # プルダウンに表示する分かりやすい文字列を生成
-            log_selector_df["表示ラベル"] = "📅【" + log_selector_df["開催日"] + "】 " + log_selector_df["レース名"] + " ＠ " + log_selector_df["コース名"]
+            # 🚨 「レース日時」文字列が空でないことを担保
+            log_selector_df["レース日時"] = log_selector_df["レース日時"].fillna("不明")
             
-            # 重複を排除した一意のレース選択肢リストを作成
-            unique_race_labels = list(log_selector_df["表示ラベル"].unique())
+            # プルダウンの見た目を極限まで分かりやすく整える（例： 🏁【2026-05-24 19:30】フリーレース ＠ アロヨ・グランプリ）
+            log_selector_df["一意のレース識別ラベル"] = "🏁【" + log_selector_df["レース日時"].str.slice(0, 16) + "】 " + log_selector_df["レース名"] + " ＠ " + log_selector_df["コース名"]
             
-            selected_race_label = st.selectbox("振り返る開催レースを特定してください", unique_race_labels, key="race_log_selector_v2")
+            # 「レース日時」の降順（最新のレースが一番上にくるようにソート）
+            log_selector_df = log_selector_df.sort_values("レース日時", ascending=False)
+            
+            # ソート順を維持したまま、重複のない綺麗な選択肢リストを作成
+            unique_race_labels = []
+            for lbl in log_selector_df["一意のレース識別ラベル"].unique():
+                if lbl not in unique_race_labels:
+                    unique_race_labels.append(lbl)
+            
+            selected_race_label = st.selectbox(
+                "閲覧したい『開催枠』をプルダウンから選択してください（最新のレース順に並んでいます）", 
+                unique_race_labels, 
+                key="race_log_selector_v3"
+            )
             
             if selected_race_label:
-                # 選択された表示ラベルに完全一致する特定のレースデータ行だけをフィルタリング
-                matched_race_data = log_selector_df[log_selector_df["表示ラベル"] == selected_race_label]
+                # 🚨 他のレースと混ざらないよう、時・分・秒が完全に一致する「その1戦だけ」をピンポイント抽出
+                matched_race_data = log_selector_df[log_selector_df["一意のレース識別ラベル"] == selected_race_label]
                 
+                # スタイリッシュデザインの表で表示（順位でソート）
                 st.dataframe(
-                    matched_race_data[["順位", "プレイヤー名", "使用車種", "獲得ポイント", "獲得賞金", "コース名", "レース日時"]].sort_values("順位"), 
+                    matched_race_data[["順位", "プレイヤー名", "使用車種", "獲得ポイント", "獲得賞金", "コース名", "レース名", "レース日時"]].sort_values("順位"), 
                     hide_index=True, 
                     use_container_width=True
                 )
