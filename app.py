@@ -102,11 +102,35 @@ div[data-testid="stForm"] {
     padding: 30px !important;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
 }
+
+/* 💡①【表のデザインをスタイリッシュに超美化】 */
 div[data-testid="stDataFrame"] {
-    background-color: #111111 !important;
-    border: 1px solid #1c1c1c !important;
-    border-radius: 6px;
+    background-color: #0d0d0d !important;
+    border: 1px solid #262626 !important;
+    border-radius: 6px !important;
+    padding: 4px !important;
 }
+/* Streamlit内部のテーブル要素へのサイバーCSS強制注入 */
+div[data-testid="stDataFrame"] iframe, div[data-testid="stDataFrame"] table {
+    background-color: #0d0d0d !important;
+}
+/* データ表のセルとフォント設定 */
+.rendered_html table {
+    border-collapse: collapse !important;
+    border: 1px solid #262626 !important;
+}
+.rendered_html th {
+    background-color: #1a1a1a !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    border-bottom: 2px solid #FF003C !important;
+}
+.rendered_html td {
+    background-color: #0d0d0d !important;
+    color: #e0e0e0 !important;
+}
+
 button[data-baseweb="tab"] {
     color: #555555 !important;
     font-weight: 700 !important;
@@ -138,7 +162,7 @@ hr {
     border-top: 1px solid #222222 !important;
 }
 
-/* 🏆 【新規追加】ランキングトップ3用特別ハイライトカード */
+/* ランキングトップ3用ハイライトカード */
 .podium-container {
     background: #111111;
     border-radius: 8px;
@@ -202,7 +226,6 @@ if os.path.exists(SAVE_FILE_NAME):
         st.session_state.player_names = sorted(list(set(loaded_df["プレイヤー名"].unique())))
         if "使用車種" in loaded_df.columns:
             st.session_state.vehicle_names = sorted(list(set(loaded_df["使用車種"].dropna().unique())))
-        # 💡 コース名リストの自動ロード復元
         if "コース名" in loaded_df.columns:
             st.session_state.course_names = sorted(list(set(loaded_df["コース名"].dropna().unique())))
     except Exception as e:
@@ -282,7 +305,6 @@ if "racer_name" not in st.session_state:
 if "gate_mode" not in st.session_state:
     st.session_state.gate_mode = "login"
 
-# 💡 🔗 個人成績に直接ジャンプするためのセッション変数
 if "selected_profile_racer" not in st.session_state:
     st.session_state.selected_profile_racer = None
 
@@ -342,7 +364,7 @@ if not st.session_state.get("is_admin") and st.session_state.racer_name is None:
             st.markdown("<br>", unsafe_allow_html=True)
             c_btn1, c_btn2 = st.columns([3, 2])
             with c_btn1:
-                if st.button("ログインする", type="primary", use_container_width=True):
+                if st.button("ダッシュボードに入る", type="primary", use_container_width=True):
                     l_name = login_name_input.strip()
                     l_pwd = str(login_pwd_input).strip()
                     
@@ -371,12 +393,12 @@ if not st.session_state.get("is_admin") and st.session_state.racer_name is None:
                     
         else:
             st.subheader("✍️ 新規レーサー登録")
-            reg_name_input = st.text_input("登録するレーサー名", placeholder="例：全損ステイサム", key="racer_reg_name")
+            reg_name_input = st.text_input("登録するレーサー名", placeholder="例：Ryunosuke", key="racer_reg_name")
             reg_pwd_input = st.text_input("パスワードを設定", type="password", placeholder="••••••••", key="racer_reg_pwd")
             reg_pwd_confirm = st.text_input("パスワード（確認用）", type="password", placeholder="••••••••", key="racer_reg_confirm")
             
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("レーサー登録をする", type="primary", use_container_width=True):
+            if st.button("公式アカウントを作成する", type="primary", use_container_width=True):
                 r_name = reg_name_input.strip()
                 r_pwd = str(reg_pwd_input).strip()
                 r_conf = str(reg_pwd_confirm).strip()
@@ -386,7 +408,7 @@ if not st.session_state.get("is_admin") and st.session_state.racer_name is None:
                 elif r_pwd != r_conf:
                     st.error("❌ 確認用のパスワードが一致しません。")
                 elif r_name in player_names:
-                    st.error("❌ そのレーサー名はすでに登録されています。")
+                    st.error("❌ そのレーサー名はすでにエントリーされています。")
                 else:
                     st.session_state.racer_accounts[r_name] = r_pwd
                     if r_name not in st.session_state.player_names:
@@ -422,13 +444,12 @@ if st.session_state.get("is_admin"):
     tabs = st.tabs(["✍️ レース結果入力", "📝 履歴＆データ一括修正", "🏆 総合ランキング", "🏎️ 分析スタッツ", "👤 個人の成績確認", "⚙️ システム管理"])
     tab_input, tab_history, tab_rank, tab_car, tab_personal, tab_setting = tabs
 else:
-    # 💡 一般画面側にも「分析スタッツ」として車種＆コース分析を提供
     tabs = st.tabs(["🏆 総合ランキング", "🏎️ 分析スタッツ", "👤 個人の成績確認"])
     tab_rank, tab_car, tab_personal = tabs
     tab_input, tab_history, tab_setting = None, None, None
 
 # ==========================================
-# 【管理者専用】タブ：✍️ レース結果入力（⑥コース名入力拡張）
+# 【管理者専用】タブ：✍️ レース結果入力
 # ==========================================
 if tab_input:
     with tab_input:
@@ -453,11 +474,11 @@ if tab_input:
                 st.warning("⚠️ 注意: 3つの配分比率の合計が100%になっていません。確認してください。")
             
             st.markdown("---")
-            # 💡【⑥コース名追加】基本情報入力欄の構成に「コース名」を新設！
             col_n, col_co, col_d, col_t = st.columns([2, 2, 1, 1])
             jst = pytz.timezone('Asia/Tokyo')
             race_name = col_n.text_input("🏁 レース名・イベント名", value="フリーレース")
             course_name_input = col_co.text_input("🛣️ 開催コース名", placeholder="コース名を入力、またはダブルクリック...", value="アロヨ・グランプリ")
+            # 💡 日付・時刻データをJSTタイムゾーンベースで安全に取得
             race_date = col_d.date_input("開催日", datetime.now(jst).date())
             race_time = col_t.time_input("開催時刻", datetime.now(jst).time(), step=60)
 
@@ -552,10 +573,12 @@ if tab_input:
                         other_placement = other_pilot["placement"]
                         
                         if my_lvl < other_lvl and placement < other_placement:
-                            下剋上補正 += ((other_lvl - my_lvl) * bonus_mult)
+                            ランク差 = other_lvl - my_lvl
+                            下剋上補正 += (ランク差 * bonus_mult)
                             
                         if my_lvl > other_lvl and placement > other_placement:
-                            下剋上補正 -= ((my_lvl - other_lvl) * penalty_mult)
+                            ランク差 = my_lvl - other_lvl
+                            下剋上補正 -= (ランク差 * penalty_mult)
                     
                     final_pt = int(max(1, base_pt + 下剋上補正))
                     
@@ -571,7 +594,7 @@ if tab_input:
                         "順位": placement,
                         "プレイヤー名": current_pilot["p_name"],
                         "使用車種": current_pilot["v_name"],
-                        "コース名": final_course_name, # 保存項目追加
+                        "コース名": final_course_name,
                         "獲得ポイント": final_pt,
                         "獲得賞金": final_prize,
                         "レース名": race_name,
@@ -595,7 +618,6 @@ if tab_history:
             st.info("データがありません。")
         else:
             col_rep1, col_rep2, col_rep3 = st.columns(3)
-            # ⑥ コース名の一括置換も可能に拡張
             replace_target = col_rep1.selectbox("修正対象のデータ", ["プレイヤー名", "使用車種", "コース名"])
             if replace_target == "プレイヤー名": options_list = player_names
             elif replace_target == "使用車種": options_list = vehicle_names
@@ -695,13 +717,13 @@ if tab_setting:
                     st.error(f"ファイル展開エラー: {e}")
 
 # ==========================================
-# 【共通】タブ：🏆 総合ランキング（④トップ3強調 ＆ ①、②、③、⑤機能集約）
+# 【共通】タブ：🏆 総合ランキング（①〜⑤の機能拡張）
 # ==========================================
 with tab_rank:
     st.subheader("🏆 GLOBAL LEADERBOARD")
     
-    # 💡【①テキスト変更】「ログイン中のパイロット」から「ログイン中のレーサー」へ変更
     if not st.session_state.get("is_admin") and st.session_state.racer_name:
+        # 💡 ① 「ログイン中のレーサー」へ文言統一
         st.write(f"ログイン中のレーサー: **{st.session_state.racer_name}**")
         
     clean_history = history_df[history_df["レース名"] != "SYSTEM_SIGNUP"] if not history_df.empty else history_df
@@ -709,7 +731,6 @@ with tab_rank:
     if clean_history.empty:
         st.info("レースデータがありません。")
     else:
-        # ランキング基礎集計
         ranking_base = clean_history.groupby("プレイヤー名").agg(
             出走回数=("順位", "count"), 累計ポイント=("獲得ポイント", "sum"),
             通算獲得賞金=("獲得賞金", "sum"), 平均順位=("順位", "mean"),
@@ -718,7 +739,7 @@ with tab_rank:
         ranking_base["平均順位"] = ranking_base["平均順位"].round(1)
         ranking_base["ランク"] = ranking_base["累計ポイント"].apply(lambda x: get_rank_info(x)[0])
         
-        # 💡【④ランキングTOP3の圧倒的ハイライト装飾】
+        # ④ ランキングトップ3のハイライト表示
         st.markdown("### 🥇 SEASON TOP 3 PILOTS")
         top3_df = ranking_base.sort_values("累計ポイント", ascending=False).head(3).reset_index(drop=True)
         
@@ -751,11 +772,11 @@ with tab_rank:
             prize_ranking = ranking_base.sort_values("通算獲得賞金", ascending=False)
             st.dataframe(prize_ranking[["プレイヤー名", "ランク", "通算獲得賞金", "出走回数"]], hide_index=True, use_container_width=True)
         with col2:
-            st.markdown("##### 👑 シーズン累計ポイントランキング（4位以降含め全表示）")
+            st.markdown("##### 👑 シーズン累計ポイントランキング")
             point_ranking = ranking_base.sort_values("累計ポイント", ascending=False)
             st.dataframe(point_ranking[["プレイヤー名", "ランク", "累計ポイント", "優勝回数", "平均順位"]], hide_index=True, use_container_width=True)
             
-        # 💡【⑤名前を押すと個人成績にジャンプする選択システム】
+        # ⑤ 名前選択リンク
         st.markdown("---")
         st.subheader("🔗 レーサー名をクリックして個別データを引き出す")
         selected_click_name = st.selectbox(
@@ -764,24 +785,40 @@ with tab_rank:
             key="ranking_click_detector"
         )
         if selected_click_name != "選択してください":
-            # 選択された名前をセッションにロックし、タブ切り替え無しで下部ダッシュボードを自動開閉
             st.session_state.selected_profile_racer = selected_click_name
             
-        # 💡【③過去レースの結果ログ・振り返りは、レースごとでのみ閲覧できるように統一】
+        # 💡②、③【レース別リザルト・振り返りログを開催日情報付きでスマートに完全分離】
         st.divider()
-        st.subheader("🔍 レース別リザルト・振り返りログ")
-        unique_races = [r for r in clean_history["レース名"].unique() if r != ""]
-        if unique_races:
-            selected_race = st.selectbox("振り返るレースタイトルを1つ選択してください", unique_races, key="race_log_selector")
-            if selected_race:
-                view_df = clean_history[clean_history["レース名"] == selected_race]
-                # ⑥ コース名も表にしっかり表示
-                st.dataframe(view_df[["順位", "プレイヤー名", "使用車種", "コース名", "獲得ポイント", "獲得賞金", "レース日時"]].sort_values("順位"), hide_index=True, use_container_width=True)
+        st.subheader("🔍 レース別公式リザルト（過去ログ・振り返り）")
+        
+        if not clean_history.empty:
+            # 各開催日ごとの一意のレースを特定するため、「日付」「レース名」「コース名」を合体させたラベルを作成
+            log_selector_df = clean_history.copy()
+            # レース日時の先頭10文字（YYYY-MM-DD）を切り出し
+            log_selector_df["開催日"] = log_selector_df["レース日時"].str.slice(0, 10)
+            
+            # プルダウンに表示する分かりやすい文字列を生成
+            log_selector_df["表示ラベル"] = "📅【" + log_selector_df["開催日"] + "】 " + log_selector_df["レース名"] + " ＠ " + log_selector_df["コース名"]
+            
+            # 重複を排除した一意のレース選択肢リストを作成
+            unique_race_labels = list(log_selector_df["表示ラベル"].unique())
+            
+            selected_race_label = st.selectbox("振り返る開催レースを特定してください", unique_race_labels, key="race_log_selector_v2")
+            
+            if selected_race_label:
+                # 選択された表示ラベルに完全一致する特定のレースデータ行だけをフィルタリング
+                matched_race_data = log_selector_df[log_selector_df["表示ラベル"] == selected_race_label]
+                
+                st.dataframe(
+                    matched_race_data[["順位", "プレイヤー名", "使用車種", "獲得ポイント", "獲得賞金", "コース名", "レース日時"]].sort_values("順位"), 
+                    hide_index=True, 
+                    use_container_width=True
+                )
         else:
             st.info("保存されている有効なレースログがありません。")
 
 # ==========================================
-# 【共通】タブ：🏎️ 分析スタッツ（⑥コース別データ分析の新規追加）
+# 【共通】タブ：🏎️ 分析スタッツ
 # ==========================================
 with tab_car:
     st.subheader("🏎️ SERVER PERFORMANCE STATISTICS")
@@ -790,9 +827,8 @@ with tab_car:
     if clean_history.empty:
         st.info("分析するためのレースデータが不足しています。")
     else:
-        sub_tab_vehicle, sub_tab_course = st.tabs(["🏎️ 車種別データ分析", "🛣️ コース別データ分析（新機能）"])
+        sub_tab_vehicle, sub_tab_course = st.tabs(["🏎️ 車種別データ分析", "🛣️ コース別データ分析"])
         
-        # 1. 車種別分析
         with sub_tab_vehicle:
             car_df = clean_history[clean_history["使用車種"].notna() & (clean_history["使用車種"] != "")].groupby("使用車種").agg(
                 使用回数=("順位", "count"), 平均順位=("順位", "mean"), 優勝回数=("順位", lambda x: (x == 1).sum())
@@ -801,27 +837,19 @@ with tab_car:
             car_df["勝率(%)"] = ((car_df["優勝回数"] / car_df["使用回数"]) * 100).round(1)
             st.dataframe(car_df.sort_values("使用回数", ascending=False), hide_index=True, use_container_width=True)
             
-        # 2. 💡【⑥コース別データ分析の新規追加！】
         with sub_tab_course:
             if "コース名" in clean_history.columns and not clean_history[clean_history["コース名"] != "未登録"].empty:
-                
                 course_analysis_records = []
                 grouped_course = clean_history.groupby("コース名")
                 
                 for c_name, c_group in grouped_course:
-                    # このコースでのユニークなレース（戦）数を計算
                     total_races_in_course = c_group["レース日時"].nunique()
-                    # 総出走台数
                     total_runs = len(c_group)
                     
-                    # 1位（優勝）のデータ
                     winners = c_group[c_group["順位"] == 1]
-                    # 最多優勝車種
                     top_win_car = winners["使用車種"].value_counts().idxmax() if not winners.empty and len(winners["使用車種"].dropna().replace("", pd.NA).dropna()) > 0 else "なし"
-                    # 最多使用車種
                     top_used_car = c_group["使用車種"].value_counts().idxmax() if not c_group["使用車種"].dropna().empty and len(c_group["使用車種"].dropna().replace("", pd.NA).dropna()) > 0 else "なし"
                     
-                    # 平均順位
                     avg_placement = c_group["順位"].mean().round(1)
                     
                     course_analysis_records.append({
@@ -835,17 +863,16 @@ with tab_car:
                     
                 st.dataframe(pd.DataFrame(course_analysis_records), hide_index=True, use_container_width=True)
             else:
-                st.info("コース名が記録されたレースリザルトデータがまだありません。結果入力からコース名を指定して保存してください。")
+                st.info("コースデータがまだありません。")
 
 # ==========================================
-# 【共通】タブ：👤 個人の成績確認（⑤ジャンプ連動）
+# 【共通】タブ：👤 個人の成績確認
 # ==========================================
 with tab_personal:
     st.subheader("👤 PERSONAL TELEMETRY DASHBOARD")
     if not player_names:
         st.info("データに登録されているレーサーが見つかりません。")
     else:
-        # 💡【⑤ランキングの名前連動システム】クリックされた名前があれば、そちらをデフォルトの初期位置に強制固定
         if st.session_state.selected_profile_racer in player_names:
             default_index = player_names.index(st.session_state.selected_profile_racer)
         elif st.session_state.racer_name in player_names:
@@ -888,6 +915,5 @@ with tab_personal:
                 st.markdown(f"**🚗 メインビークル (最多使用):** `{fav_car}`")
                 
                 st.markdown("<br>", unsafe_allow_html=True)
-                # ⑥ 表の中にコース名を追加
                 display_cols = ["レース名", "コース名", "順位", "使用車種", "獲得ポイント", "獲得賞金", "レース日時"]
                 st.dataframe(player_data[display_cols].sort_values("レース日時", ascending=False), hide_index=True, use_container_width=True)
