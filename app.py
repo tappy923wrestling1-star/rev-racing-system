@@ -301,9 +301,6 @@ if "racer_name" not in st.session_state:
 if "gate_mode" not in st.session_state:
     st.session_state.gate_mode = "login"
 
-if "selected_profile_racer" not in st.session_state:
-    st.session_state.selected_profile_racer = None
-
 col_space, col_admin_panel, col_logout_panel = st.columns([3, 1, 1])
 
 with col_admin_panel:
@@ -321,7 +318,6 @@ with col_logout_panel:
             st.session_state.is_admin = False
             st.session_state.racer_name = None
             st.session_state.gate_mode = "login"
-            st.session_state.selected_profile_racer = None
             st.success("ログアウトしました。")
             st.rerun()
 
@@ -531,7 +527,6 @@ if tab_input:
             
             if not has_error:
                 participants_data = []
-                # 💡 秒単位（:00）まで含めた一意のタイムスタンプ文字列を作成して主キー化
                 race_datetime_str = f"{race_date} {race_time.strftime('%H:%M')}:00"
                 
                 if final_course_name not in st.session_state.course_names:
@@ -713,7 +708,7 @@ if tab_setting:
                     st.error(f"ファイル展開エラー: {e}")
 
 # ==========================================
-# 【共通】タブ：🏆 総合ランキング（💡レース別閲覧の大革命）
+# 【共通】タブ：🏆 総合ランキング（💡エラーの出た不要連動セレクトを完全削除）
 # ==========================================
 with tab_rank:
     st.subheader("🏆 GLOBAL LEADERBOARD")
@@ -770,33 +765,17 @@ with tab_rank:
             point_ranking = ranking_base.sort_values("累計ポイント", ascending=False)
             st.dataframe(point_ranking[["プレイヤー名", "ランク", "累計ポイント", "優勝回数", "平均順位"]], hide_index=True, use_container_width=True)
             
-        st.markdown("---")
-        st.subheader("🔗 レーサー名をクリックして個別データを引き出す")
-        selected_click_name = st.selectbox(
-            "詳細データ（個人成績）を見たいレーサー名を選択してください", 
-            ["選択してください"] + list(ranking_base["プレイヤー名"].unique()),
-            key="ranking_click_detector"
-        )
-        if selected_click_name != "選択してください":
-            st.session_state.selected_profile_racer = selected_click_name
+        # 💡【削除完了】バグの温床になっていた「名前をクリックして引き出すセレクトボックス」エリアを完全にカットしました。
             
-        # 💡【ここが今回の大幅強化！】開催「時間（時・分）」まで完全に切り分けたレース別公式リザルト表示
         st.divider()
         st.subheader("🔍 レース別公式リザルト（1戦ごとに完全分離閲覧）")
         
         if not clean_history.empty:
             log_selector_df = clean_history.copy()
-            
-            # 🚨 「レース日時」文字列が空でないことを担保
             log_selector_df["レース日時"] = log_selector_df["レース日時"].fillna("不明")
-            
-            # プルダウンの見た目を極限まで分かりやすく整える（例： 🏁【2026-05-24 19:30】フリーレース ＠ アロヨ・グランプリ）
             log_selector_df["一意のレース識別ラベル"] = "🏁【" + log_selector_df["レース日時"].str.slice(0, 16) + "】 " + log_selector_df["レース名"] + " ＠ " + log_selector_df["コース名"]
-            
-            # 「レース日時」の降順（最新のレースが一番上にくるようにソート）
             log_selector_df = log_selector_df.sort_values("レース日時", ascending=False)
             
-            # ソート順を維持したまま、重複のない綺麗な選択肢リストを作成
             unique_race_labels = []
             for lbl in log_selector_df["一意のレース識別ラベル"].unique():
                 if lbl not in unique_race_labels:
@@ -809,10 +788,7 @@ with tab_rank:
             )
             
             if selected_race_label:
-                # 🚨 他のレースと混ざらないよう、時・分・秒が完全に一致する「その1戦だけ」をピンポイント抽出
                 matched_race_data = log_selector_df[log_selector_df["一意のレース識別ラベル"] == selected_race_label]
-                
-                # スタイリッシュデザインの表で表示（順位でソート）
                 st.dataframe(
                     matched_race_data[["順位", "プレイヤー名", "使用車種", "獲得ポイント", "獲得賞金", "コース名", "レース名", "レース日時"]].sort_values("順位"), 
                     hide_index=True, 
@@ -870,21 +846,20 @@ with tab_car:
                 st.info("コースデータがまだありません。")
 
 # ==========================================
-# 【共通】タブ：👤 個人の成績確認
+# 【共通】タブ：👤 個人の成績確認（💡シンプルイズベストの王道集計）
 # ==========================================
 with tab_personal:
     st.subheader("👤 PERSONAL TELEMETRY DASHBOARD")
     if not player_names:
         st.info("データに登録されているレーサーが見つかりません。")
     else:
-        if st.session_state.selected_profile_racer in player_names:
-            default_index = player_names.index(st.session_state.selected_profile_racer)
-        elif st.session_state.racer_name in player_names:
+        # 他のセレクトボックスとの競合を無くし、純粋にログインユーザー、あるいは選択した人だけを表示
+        if st.session_state.racer_name in player_names:
             default_index = player_names.index(st.session_state.racer_name)
         else:
             default_index = 0
             
-        target_player = st.selectbox("リザルトを確認したいレーサーを選択してください", player_names, index=default_index, key="profile_select_box")
+        target_player = st.selectbox("リザルトを確認したいレーサーを選択してください", player_names, index=default_index, key="profile_select_box_v3")
         
         if target_player:
             clean_history = history_df[history_df["レース名"] != "SYSTEM_SIGNUP"] if not history_df.empty else history_df
