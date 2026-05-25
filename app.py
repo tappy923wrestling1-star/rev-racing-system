@@ -376,7 +376,7 @@ if not st.session_state.get("is_admin") and st.session_state.racer_name is None:
             reg_pwd_confirm = st.text_input("パスワード（確認用）", type="password", placeholder="••••••••", key="racer_reg_confirm")
             
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("公式アカウントを作成する", type="primary", use_container_width=True):
+            if st.button("レーサー登録をする", type="primary", use_container_width=True):
                 r_name = reg_name_input.strip()
                 r_pwd = str(reg_pwd_input).strip()
                 r_conf = str(reg_pwd_confirm).strip()
@@ -386,7 +386,7 @@ if not st.session_state.get("is_admin") and st.session_state.racer_name is None:
                 elif r_pwd != r_conf:
                     st.error("❌ 確認用のパスワードが一致しません。")
                 elif r_name in player_names:
-                    st.error("❌ そのレーサー名はすでにエントリーされています。")
+                    st.error("❌ そのレーサー名はすでに登録されています。")
                 else:
                     st.session_state.racer_accounts[r_name] = r_pwd
                     if r_name not in st.session_state.player_names:
