@@ -342,7 +342,7 @@ if not st.session_state.get("is_admin") and st.session_state.racer_name is None:
             st.markdown("<br>", unsafe_allow_html=True)
             c_btn1, c_btn2 = st.columns([3, 2])
             with c_btn1:
-                if st.button("ダッシュボードに入る", type="primary", use_container_width=True):
+                if st.button("ログインする", type="primary", use_container_width=True):
                     l_name = login_name_input.strip()
                     l_pwd = str(login_pwd_input).strip()
                     
@@ -371,7 +371,7 @@ if not st.session_state.get("is_admin") and st.session_state.racer_name is None:
                     
         else:
             st.subheader("✍️ 新規レーサー登録")
-            reg_name_input = st.text_input("登録するレーサー名", placeholder="例：Ryunosuke", key="racer_reg_name")
+            reg_name_input = st.text_input("登録するレーサー名", placeholder="例：全損ステイサム", key="racer_reg_name")
             reg_pwd_input = st.text_input("パスワードを設定", type="password", placeholder="••••••••", key="racer_reg_pwd")
             reg_pwd_confirm = st.text_input("パスワード（確認用）", type="password", placeholder="••••••••", key="racer_reg_confirm")
             
